@@ -1,0 +1,10 @@
+*.txt
+*.csv
+*.npy
+*.zip
+*.tar
+*.gz
+*.pt
+*.vscode
+raw_data/*
+__pycache__
