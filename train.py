@@ -34,6 +34,7 @@ def train_model(
     test_losses = np.zeros(max_epochs)
 
     for epoch in range(max_epochs):
+        # Training
         counter = 0
         current_loss_sum = 0
         for local_batch, local_labels in training_generator:
@@ -66,9 +67,9 @@ def train_model(
             counter += 1
         train_losses[epoch] = current_loss_sum / counter
 
+        # Validation
         counter = 0
         current_loss_sum = 0
-        # Validation
         with torch.set_grad_enabled(False):
             for local_batch, local_labels in validation_generator:
                 # Transfer to GPU
@@ -87,6 +88,7 @@ def train_model(
                 counter += 1
             test_losses[epoch] = current_loss_sum / counter
 
+        # Output losses after each epoch
         print(f'Epoch {epoch+1} train loss: {train_losses[epoch]}, test loss: {test_losses[epoch]}')
 
     return model, train_losses, test_losses
