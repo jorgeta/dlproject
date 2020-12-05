@@ -5,6 +5,7 @@
 *.tar
 *.gz
 *.pt
+*.pickle
 *.vscode
 raw_data/*
 __pycache__

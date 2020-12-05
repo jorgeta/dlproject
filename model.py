@@ -13,8 +13,8 @@ class LSTM_Net(nn.Module):
 		input_dim, 
 		hidden_dim, 
 		linear_dim, 
-		sequence_length = 14*24,
-		output_dim = 10
+		sequence_length,
+		output_dim
 		):
 
 		'''

@@ -4,11 +4,13 @@ import pickle
 import numpy as np
 import pandas as pd
 import datetime as dt
+import os
 from data_handler import Datasaver
 
 class Preprocessor():
     def __init__(
         self, 
+        name: str,
         sequence_length: int, # length of sequence of data per sample
         test_set_length: int, # size of test set in hours
         difference_length: int, # predicting (data at time t) - data at time (t-difference_length)
@@ -26,6 +28,10 @@ class Preprocessor():
         self.bus_nr = bus_nr
         self.bus_direction = bus_direction
         self.passenger_amount = passenger_amount
+
+        self.name = name
+        self.path = f'storage/{name}'
+        os.makedirs(self.path, exist_ok=True)
 
         if not self.use_difference:
             self.difference_length = 0
@@ -106,7 +112,6 @@ class Preprocessor():
             person_density_array_all_hours.append(person_density_array)
         
         self.boarding_data = np.array(person_density_array_all_hours)
-
         self.boarding_data_is_initialized = True
 
     def temporal_one_hot_encoder(self):
@@ -124,7 +129,6 @@ class Preprocessor():
         enc.fit(temporal_features)
 
         self.temporal_data = np.array(enc.transform(temporal_features).toarray())
-
         self.temporal_data_is_initialized = True
 
     def train_test_split(self):
@@ -170,6 +174,15 @@ class Preprocessor():
         else:
             print("Skipping differencing.")
 
+    def save_scaler(self, scaler):
+        try:
+            print('Saving scaler to file...')
+            pickle_out = open(f"{self.path}/scaler.pickle", "wb")
+            pickle.dump(scaler, pickle_out)
+            pickle_out.close()
+        except:
+            print('Scaler is not yet defined.')
+
     def standard_scale(self):
         '''Scale data by subtracting mean and dividing by standard deviation.'''
         if not self.data_is_splitted:
@@ -193,6 +206,8 @@ class Preprocessor():
         self.train_boarding_data = train_data_scaled
         self.test_boarding_data = test_data_scaled
 
+        self.save_scaler(scaler)
+
     def concatenate(self):
         if not self.data_is_concatenated:
             self.train_data = np.concatenate((self.train_boarding_data, self.train_temporal_data), axis=1)
@@ -210,7 +225,7 @@ class Preprocessor():
 
         inputs = []
         targets = []
-        for i in range(len(cat) - self.sequence_length - 1):
+        for i in range(len(cat) - self.sequence_length):
             x = cat[i:(i+self.sequence_length)]
             y = cat[i+self.sequence_length]
             inputs.append(x)
@@ -218,11 +233,13 @@ class Preprocessor():
 
         temporal_parts_of_targets = [i for i in range(10, cat.shape[1])]
         targets = np.delete(np.array(targets), temporal_parts_of_targets, axis=1)
+
+        self.train_set_length = len(targets)-self.test_set_length
         
-        self.X_train = torch.tensor(inputs[:len(self.train_data)])
-        self.y_train = torch.tensor(targets[:len(self.train_data)])
-        self.X_test = torch.tensor(inputs[-len(self.test_data):])
-        self.y_test = torch.tensor(targets[-len(self.test_data):])
+        self.X_train = torch.tensor(inputs[:self.train_set_length])
+        self.y_train = torch.tensor(targets[:self.train_set_length])
+        self.X_test = torch.tensor(inputs[self.train_set_length:])
+        self.y_test = torch.tensor(targets[self.train_set_length:])
 
     def store_hyperparameters(self):
         hyper_params = {
@@ -234,24 +251,28 @@ class Preprocessor():
             'bus_direction': self.bus_direction,
             'passenger_amount': self.passenger_amount
         }
-        pickle_out = open("data/hyperparameters.pickle", "wb")
+        pickle_out = open(f"{self.path}/hyperparameters.pickle", "wb")
         pickle.dump(hyper_params, pickle_out)
         pickle_out.close()
 
-def preprocess():
+def preprocess(
+    storage_name,
+    sequence_length = 24*14,
+    test_set_length = 24*28,
+    path_to_data_folder = 'raw_data/',
+    difference_length = 24*7,
+    use_difference = True,
+    bus_nr = '150',
+    bus_direction = True,
+    passenger_amount = False
+    ):
 
     # preprocessing defining variables
-    sequence_length = 24*14
-    test_set_length = 24*28
-    path_to_data_folder = 'raw_data/'
-    difference_length = 24*7
-    use_difference = True
-    bus_nr = '150'
-    bus_direction = True
-    passenger_amount = False
+    
 
     # initialize the preprocessor
     pp = Preprocessor(
+        storage_name,
         sequence_length,
         test_set_length,
         difference_length,
@@ -278,6 +299,13 @@ def preprocess():
     pp.store_hyperparameters()
 
     # save data so dataloader can use it
-    datasaver = Datasaver(pp.X_train, pp.y_train, pp.X_test, pp.y_test)
-
-preprocess()
+    datasaver = Datasaver(
+        pp.name,
+        pp.X_train, 
+        pp.y_train, 
+        pp.X_test, 
+        pp.y_test,
+        pp.boarding_data,
+        pp.difference_length,
+        pp.sequence_length
+    )
