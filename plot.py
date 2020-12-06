@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
+from torch import nn
 import numpy as np
 import torch
 from numpy import savetxt, loadtxt
 
 class Results():
-    def __init__(self, storage_name):
+    def __init__(self, storage_name, passenger_amount):
         self.path = f'storage/{storage_name}'
+        self.passenger_amount = passenger_amount
 
         self.train_losses = loadtxt(f'{self.path}/train_losses.npy', delimiter=',')
         self.test_losses = loadtxt(f'{self.path}/test_losses.npy', delimiter=',')
@@ -17,9 +19,8 @@ class Results():
 
         self.n_std = 2
 
-        self.upper = self.means + (self.n_std * self.stds)
-        self.lower = self.means - (self.n_std * self.stds)
-    
+        self.lower, self.upper = self.get_upper_and_lower_confidence_interval(self.means, self.stds)
+
     def plot_training(self):
         print(self.test_losses)
         print(self.train_losses)
@@ -51,5 +52,34 @@ class Results():
         plt.show()
     
     def print_performance_measures(self):
-        print(f'MSE: {self.mse}')
-        print(f'Accuracy: {self.acc*100} %')
+        print(f'MSE: {self.get_MSE(self.means, self.targets)}')
+        print(f'Accuracy: {self.get_accuracy(self.targets, self.means, self.stds)*100} %')
+
+    def get_MSE(self, means, targets):
+        '''Compare targets and means'''
+        criterion = nn.MSELoss()
+        mse = criterion(torch.Tensor(means).float(), torch.Tensor(targets).float())
+        return np.array([mse.cpu().detach().numpy()])
+    
+    def get_upper_and_lower_confidence_interval(self, means, stds):
+        upper = means + (self.n_std * stds)
+        lower = means - (self.n_std * stds)
+        if self.passenger_amount:
+            upper[upper < 0] = 0
+            lower[lower < 0] = 0
+        return torch.from_numpy(lower), torch.from_numpy(upper)
+
+    def get_accuracy(self, targets, means, stds):
+        lower, upper = self.get_upper_and_lower_confidence_interval(means, stds)
+        total_elements = torch.numel(lower)
+        elements_in_condfidence_interval = 0
+        lower_flattened = torch.flatten(lower)
+        upper_flattened = torch.flatten(upper)
+        targets_flattened = torch.flatten(torch.from_numpy(targets))
+        lower_flattened[lower_flattened<0] = 0
+        upper_flattened[upper_flattened<0] = 0
+        targets_flattened[targets_flattened<0] = 0
+        for i in range(total_elements):
+            if (targets_flattened[i]-lower_flattened[i] > 0) and (targets_flattened[i]-upper_flattened[i] < 0):
+                elements_in_condfidence_interval += 1
+        return np.array([elements_in_condfidence_interval/total_elements])

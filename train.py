@@ -17,6 +17,8 @@ def train_model(
     device = torch.device("cuda:0" if use_cuda else "cpu")
     torch.backends.cudnn.benchmark = True
 
+    model.to(device)
+
     # Generators
     training_set = Dataset(partition['train'])
     training_generator = torch.utils.data.DataLoader(training_set, **params)
@@ -45,20 +47,16 @@ def train_model(
             optimiser.zero_grad()
 
             # forward and backward propagation
-            def closure():
-                optimiser.zero_grad()
-                batch_loss_elbo = model.sample_elbo(
-                    inputs=local_batch.float(),
-                    labels=local_labels.float(),
-                    criterion=criterion,
-                    sample_nbr=elbo_sample_nbr
-                )
+            batch_loss_elbo = model.sample_elbo(
+                inputs=local_batch.float(),
+                labels=local_labels.float(),
+                criterion=criterion,
+                sample_nbr=elbo_sample_nbr
+            )
 
-                batch_loss_elbo.backward()
-                return batch_loss_elbo
-            
-            # closure lets the optimiser do several steps
-            optimiser.step(closure)
+            batch_loss_elbo.backward()
+
+            optimiser.step()
 
             output = model(local_batch.float())
             current_train_loss = criterion(output, local_labels.float())

@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 import numpy as np
 import pickle
 import os
@@ -14,7 +15,8 @@ class Predict():
         test_set_IDs,
         params,
         n_samples,
-        n_std
+        n_std,
+        passenger_amount
         ):
 
         self.model = trained_model
@@ -23,6 +25,7 @@ class Predict():
         self.params = params
         self.n_samples = n_samples
         self.n_std = n_std
+        self.passenger_amount = passenger_amount
 
         self.name = name
         self.path = f'storage/{self.name}'
@@ -44,13 +47,15 @@ class Predict():
         self.scaler = scaler
 
     def inverseScale(self, output):
-        return torch.from_numpy(self.scaler.inverse_transform(output.detach().numpy()))
+        return torch.from_numpy(self.scaler.inverse_transform(output.cpu().detach().numpy()))
 
     def inverseDifference(self, output, IDs):
         for i in range(len(output)):
             difference_ID = self.get_ID_minus_difference(IDs[i])
             y_difference_ago = torch.load('data/y_unscaled/' + difference_ID + '.pt')
             output[i] = output[i].add(y_difference_ago)
+        if self.passenger_amount:
+            output[output < 0] = 0
         return output
 
     def get_ID_minus_difference(self, ID):
@@ -117,11 +122,14 @@ class Predict():
         '''Compare targets and means'''
         criterion = nn.MSELoss()
         mse = criterion(means, targets)
-        return np.array([mse.detach().numpy()])
+        return np.array([mse.cpu().detach().numpy()])
     
     def get_upper_and_lower_confidence_interval(self, means, stds):
         upper = means + (self.n_std * stds)
         lower = means - (self.n_std * stds)
+        if self.passenger_amount:
+            upper[upper < 0] = 0
+            lower[lower < 0] = 0
         return lower, upper
 
     def get_accuracy(self, targets, means, stds):
@@ -135,4 +143,3 @@ class Predict():
             if (targets_flattened[i]-lower_flattened[i] > 0) and (targets_flattened[i]-upper_flattened[i] < 0):
                 elements_in_condfidence_interval += 1
         return np.array([elements_in_condfidence_interval/total_elements])
-

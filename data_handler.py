@@ -12,8 +12,8 @@ class Dataset(torch.utils.data.Dataset):
 
 	def __getitem__(self, index):
 		ID = self.list_IDs[index]
-		X = torch.load('data/X/' + ID + '.pt')
-		y = torch.load('data/y/' + ID + '.pt')
+		X = torch.load('data/X/' + ID + '.pt', map_location=torch.device('cpu'))
+		y = torch.load('data/y/' + ID + '.pt', map_location=torch.device('cpu'))
 		return X, y
 
 class Datasaver():
@@ -141,28 +141,46 @@ class StorageOps():
 		self.path = f'storage/{name}'
 		os.makedirs(self.path, exist_ok=True)
 	
-	def store_model(self, model, train_losses, test_losses):
+	def store_model(
+		self, 
+		model, 
+		train_losses, 
+		test_losses,
+		input_dimension,
+		hidden_dimension,
+    	linear_dimension,
+    	output_dimension
+		):
+
 		pickle_out = open(f"{self.path}/model.pickle","wb")
 		pickle.dump(model, pickle_out)
 		pickle_out.close()
 		savetxt(f'{self.path}/train_losses.npy', array(train_losses), delimiter=',')
 		savetxt(f'{self.path}/test_losses.npy', array(test_losses), delimiter=',')
+		savetxt(f'{self.path}/dimensions.npy', array([
+			input_dimension, hidden_dimension, linear_dimension, output_dimension
+		]), delimiter=',')
+		
 
 	def load_model(self):
 		try:
 			pickle_in = open(f"{self.path}/model.pickle","rb")
+			model = pickle.load(pickle_in)
+			pickle_in.close()
 		except:
 			print('Model has not been created yet.')
-		model = pickle.load(pickle_in)
-		pickle_in.close()
+			model = None
 		try:
 			train_losses = loadtxt(f'{self.path}/train_losses.npy', delimiter=',')
 			test_losses = loadtxt(f'{self.path}/test_losses.npy', delimiter=',')
+			input_dimension, hidden_dimension, linear_dimension, output_dimension = loadtxt(
+				f'{self.path}/dimensions.npy', delimiter=','
+			)
 		except:
 			train_losses = None
 			test_losses = None
 			print('Train and test loss arrays have not yet been created.')
-		return model, train_losses, test_losses
+		return model, train_losses, test_losses, input_dimension, hidden_dimension, linear_dimension, output_dimension
 
 	def save_targets_means_stds(self, targets, means, stds):
 		savetxt(f'{self.path}/targets.npy', targets.detach().numpy(), delimiter=',')

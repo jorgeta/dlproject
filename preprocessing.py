@@ -19,6 +19,7 @@ class Preprocessor():
         bus_nr: str = '150', # 10, 15, 150, or 300
         bus_direction: bool = True, # for bus_nr=150: northwards (True), southwards (False)
         passenger_amount: bool = False, # predict amount (True) or change in amount (False) of passengers
+        use_temporal_features: bool = True
     ):
         self.sequence_length = sequence_length
         self.test_set_length = test_set_length
@@ -28,6 +29,7 @@ class Preprocessor():
         self.bus_nr = bus_nr
         self.bus_direction = bus_direction
         self.passenger_amount = passenger_amount
+        self.use_temporal_features = use_temporal_features
 
         self.name = name
         self.path = f'storage/{name}'
@@ -55,7 +57,8 @@ class Preprocessor():
         # do basic first step preprocessing
         self.get_raw_data()
         self.create_person_density_array()
-        self.temporal_one_hot_encoder()
+        if self.use_temporal_features:
+            self.temporal_one_hot_encoder()
         self.train_test_split()
 
     def get_raw_data(self):
@@ -120,22 +123,23 @@ class Preprocessor():
             self.get_raw_data()
         
         print("Creating temporal data using od_time...")
-        
-        temporal_features = []
-        for i in range(len(self.od_time)):
-            temporal_features.append([self.od_time[i].dayofweek, self.od_time[i].hour])
-        
-        enc = OneHotEncoder(handle_unknown='ignore')
-        enc.fit(temporal_features)
+        if self.use_temporal_features:
+            temporal_features = []
+            for i in range(len(self.od_time)):
+                temporal_features.append([self.od_time[i].dayofweek, self.od_time[i].hour])
+            
+            enc = OneHotEncoder(handle_unknown='ignore')
+            enc.fit(temporal_features)
 
-        self.temporal_data = np.array(enc.transform(temporal_features).toarray())
+            self.temporal_data = np.array(enc.transform(temporal_features).toarray())
         self.temporal_data_is_initialized = True
 
     def train_test_split(self):
         if not self.temporal_data_is_initialized or not self.boarding_data_is_initialized:
             print("Warning: both boarding data and temporal data needs to be initialized.")
             self.create_person_density_array()
-            self.temporal_one_hot_encoder()
+            if self.use_temporal_features:
+                self.temporal_one_hot_encoder()
         if not self.data_is_splitted:
             print("Splitting data into a training and a test set...")
 
@@ -144,8 +148,9 @@ class Preprocessor():
             self.train_boarding_data = self.boarding_data[:self.train_set_length]
             self.test_boarding_data = self.boarding_data[-self.test_set_length:]
 
-            self.train_temporal_data = self.temporal_data[:self.train_set_length]
-            self.test_temporal_data = self.temporal_data[-self.test_set_length:]
+            if self.use_temporal_features:
+                self.train_temporal_data = self.temporal_data[:self.train_set_length]
+                self.test_temporal_data = self.temporal_data[-self.test_set_length:]
 
             self.data_is_splitted = True
         else:
@@ -169,8 +174,9 @@ class Preprocessor():
             self.train_boarding_data = data_diffed[self.difference_length:len(self.train_boarding_data)]
             self.test_boarding_data = data_diffed[-len(self.test_boarding_data):]
 
-            if len(self.train_temporal_data) > len(self.train_boarding_data):
-                self.train_temporal_data = self.train_temporal_data[self.difference_length:]
+            if self.use_temporal_features:
+                if len(self.train_temporal_data) > len(self.train_boarding_data):
+                    self.train_temporal_data = self.train_temporal_data[self.difference_length:]
         else:
             print("Skipping differencing.")
 
@@ -210,8 +216,12 @@ class Preprocessor():
 
     def concatenate(self):
         if not self.data_is_concatenated:
-            self.train_data = np.concatenate((self.train_boarding_data, self.train_temporal_data), axis=1)
-            self.test_data = np.concatenate((self.test_boarding_data, self.test_temporal_data), axis=1)
+            if self.use_temporal_features:
+                self.train_data = np.concatenate((self.train_boarding_data, self.train_temporal_data), axis=1)
+                self.test_data = np.concatenate((self.test_boarding_data, self.test_temporal_data), axis=1)
+            else:
+                self.train_data = self.train_boarding_data
+                self.test_data = self.test_boarding_data
             self.data_is_concatenated = True
         else:
             print("Data is already concatenated.")
@@ -230,9 +240,10 @@ class Preprocessor():
             y = cat[i+self.sequence_length]
             inputs.append(x)
             targets.append(y)
-
-        temporal_parts_of_targets = [i for i in range(10, cat.shape[1])]
-        targets = np.delete(np.array(targets), temporal_parts_of_targets, axis=1)
+        
+        if self.use_temporal_features:
+            temporal_parts_of_targets = [i for i in range(10, cat.shape[1])]
+            targets = np.delete(np.array(targets), temporal_parts_of_targets, axis=1)
 
         self.train_set_length = len(targets)-self.test_set_length
         
@@ -264,7 +275,8 @@ def preprocess(
     use_difference = True,
     bus_nr = '150',
     bus_direction = True,
-    passenger_amount = False
+    passenger_amount = False,
+    use_temporal_features = True
     ):
 
     # preprocessing defining variables
@@ -280,7 +292,8 @@ def preprocess(
         path_to_data_folder,
         bus_nr,
         bus_direction,
-        passenger_amount
+        passenger_amount,
+        use_temporal_features
     )
 
     # difference the data

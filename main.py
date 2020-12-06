@@ -8,21 +8,24 @@ from preprocessing import preprocess
 from plot import Results
 
 def main():
-    do_preprocessing = True
-    train_new_model = True
-    storage_name = '003'
-    do_prediction = True
+    do_preprocessing = False
+    train_new_model = False
+    storage_name = '023'
+    do_prediction = False
     plot_results = True
 
+    use_temporal_features = True
+    passenger_amount = True
     if do_preprocessing:
         sequence_length = 24*7
         test_set_length = 24*28
         path_to_data_folder = 'raw_data/'
-        difference_length = 24
+        difference_length = 24*7
         use_difference = True
         bus_nr = '150'
         bus_direction = True
-        passenger_amount = False
+        
+
         preprocess(
             storage_name,
             sequence_length,
@@ -32,7 +35,8 @@ def main():
             use_difference,
             bus_nr,
             bus_direction,
-            passenger_amount
+            passenger_amount,
+            use_temporal_features
         )
 
     # get and print some preprocessorially defined hyperparameters
@@ -51,15 +55,18 @@ def main():
     max_epochs = 10
 
     test_params = {
-        'batch_size': 4,
+        'batch_size': 2,
         'shuffle': False,
         'num_workers': 0
     }
-    n_samples = 16 # number of samples when sampling the predictions
+    n_samples = 32 # number of samples when sampling the predictions
     n_std = 2 # number of standard deviations away from the mean to set confidence interval
-    input_dimension = 41 # number of features
-    hidden_dimension = 256 # dimension of hidden lstm layer
-    linear_dimension = 256 # dimension of output of first linear layer
+    if use_temporal_features:
+        input_dimension = 41 # number of features
+    else:
+        input_dimension = 10
+    hidden_dimension = 512 # dimension of hidden lstm layer
+    linear_dimension = 512 # dimension of output of first linear layer
     output_dimension = 10 # output dimension of network
     sequence_length = utils.hyper_params['sequence_length']
     difference_length = utils.hyper_params['difference_length']
@@ -85,9 +92,9 @@ def main():
             partition = utils.partition,
             elbo_sample_nbr = elbo_sample_nbr,
         )
-        stOps.store_model(trained_model, train_losses, test_losses)
+        stOps.store_model(trained_model, train_losses, test_losses, input_dimension, hidden_dimension, linear_dimension, output_dimension)
     else:
-        trained_model, train_losses, test_losses = stOps.load_model()
+        trained_model, train_losses, test_losses, input_dimension, hidden_dimension, linear_dimension, output_dimension = stOps.load_model()
     
     predicting = Predict(
         name = storage_name,
@@ -96,7 +103,8 @@ def main():
         test_set_IDs = utils.partition['test'],
         params = test_params,
         n_samples = n_samples,
-        n_std = n_std
+        n_std = n_std,
+        passenger_amount=passenger_amount
     )
     if do_prediction:
         predicting.predict()
@@ -114,9 +122,17 @@ def main():
         )
     
     if plot_results:
-        res = Results(storage_name)
-        res.plot_predictions_all_stops(0)
+        res = Results(storage_name, passenger_amount)
+        res.plot_predictions_all_stops(5)
+        res.plot_predictions_all_stops(6)
+        res.plot_predictions_all_stops(7)
+        res.plot_predictions_all_stops(8)
         res.plot_predictions_given_stop(0)
+        res.plot_predictions_given_stop(1)
+        res.plot_predictions_given_stop(2)
+        res.plot_predictions_given_stop(3)
+        res.plot_predictions_given_stop(4)
+        res.plot_predictions_given_stop(5)
         res.plot_training()
         res.print_performance_measures()
 
