@@ -9,3 +9,4 @@
 *.vscode
 raw_data/*
 __pycache__
+*.png

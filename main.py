@@ -16,9 +16,9 @@ def main():
 
     use_temporal_features = True
     passenger_amount = True
+    test_set_length = 24*28
     if do_preprocessing:
         sequence_length = 24*7
-        test_set_length = 24*28
         path_to_data_folder = 'raw_data/'
         difference_length = 24*7
         use_difference = True
@@ -123,22 +123,12 @@ def main():
     
     if plot_results:
         res = Results(storage_name, passenger_amount)
-        res.plot_predictions_all_stops(5)
-        res.plot_predictions_all_stops(6)
-        res.plot_predictions_all_stops(7)
-        res.plot_predictions_all_stops(8)
-        res.plot_predictions_given_stop(0)
-        res.plot_predictions_given_stop(1)
-        res.plot_predictions_given_stop(2)
-        res.plot_predictions_given_stop(3)
-        res.plot_predictions_given_stop(4)
-        res.plot_predictions_given_stop(5)
+        #for i in range(test_set_length):
+        #    res.plot_predictions_all_stops(i)
+        for i in range(10):
+            res.plot_predictions_given_stop(i)
+            res.plot_predictions_given_stop_48h(i)
         res.plot_training()
         res.print_performance_measures()
-
-
-
-
-    
 
 main()
