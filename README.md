@@ -1,13 +1,5 @@
 # Deep Learning Project
 
-## TODO
-
-- Make a baseline where an as similar as possible preprocessing strategy is used.
-- Discuss how the results relates to the project description.
-- Ask supervisor about prediction horizon.
-- Figure out which plots to include in the results section in the poster.
-- Agree on further work; what we can do during Christmas to improve the model.
-
 ## Project description
 
 Around the world, the Covid-19 is spreading again, and many countries have imposed new “corona” restrictions in an attempt to contain the infection (Hjelskov, 2020). Also, Denmark has new restrictions to try and limit Covid-19 (Københavns Vestegns Politi, 2020). The outburst and talks about a second wave of the Covid-19 (Gøttske, 2020) social distance is becoming important to the Danish citizens and people around the world. Reason being it has been shown that the effect of social distancing after six weeks amounted to a reduction in infection rate by 25% to 45% for most countries in Europe (Cot et al., 2020). Thereby, it is crucial to ensure enough capacity in public transport, as it helps the citizens to keep social distance and thereby helps to reduce the spread of the virus. 
