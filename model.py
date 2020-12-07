@@ -62,7 +62,7 @@ class LSTM_Net(nn.Module):
 		self.linear1 = nn.Linear(
 			in_features = linear_dim,
 			out_features = output_dim,
-			bias = False
+			bias = True
 		)
 
 		# dropout function

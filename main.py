@@ -6,6 +6,7 @@ from train import train_model
 from predict import Predict
 from preprocessing import preprocess
 from plot import Results
+from baseline import Baseline
 
 def main():
     do_preprocessing = False
@@ -13,6 +14,7 @@ def main():
     storage_name = '023'
     do_prediction = False
     plot_results = False
+    plot_baseline = True
 
     use_temporal_features = True
     passenger_amount = True
@@ -24,9 +26,8 @@ def main():
         use_difference = True
         bus_nr = '150'
         bus_direction = True
-        
 
-        preprocess(
+        pp = preprocess(
             storage_name,
             sequence_length,
             test_set_length,
@@ -135,5 +136,19 @@ def main():
             res.plot_predictions_given_stop_48h(i)
         res.plot_training()
         res.print_performance_measures()'''
+    
+    if plot_baseline:
+        baseline = Baseline(storage_name)
+        baseline.get_predictions_lower_upper()
+        baseline.get_mse_and_acc()
+
+        for hour in range(24):
+            baseline.plot_predictions_all_stops(hour)
+        for stop in range(10):
+            baseline.plot_predictions_given_stop(stop)
+            baseline.plot_predictions_given_stop_48h(stop)
+
+        print(baseline.mse)
+        print(baseline.acc)
 
 main()

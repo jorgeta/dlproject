@@ -268,14 +268,14 @@ class Preprocessor():
 
 def preprocess(
     storage_name,
-    sequence_length = 24*14,
+    sequence_length = 24*7,
     test_set_length = 24*28,
     path_to_data_folder = 'raw_data/',
     difference_length = 24*7,
     use_difference = True,
     bus_nr = '150',
     bus_direction = True,
-    passenger_amount = False,
+    passenger_amount = True,
     use_temporal_features = True
     ):
 
@@ -322,3 +322,5 @@ def preprocess(
         pp.difference_length,
         pp.sequence_length
     )
+
+    return pp
