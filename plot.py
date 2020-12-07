@@ -91,6 +91,47 @@ class Results():
         plt.savefig(f'{self.plot_path}/STOPNR{stop}_48H.png')
         plt.close()
     
+    def plot_trend_given_stop(self, stop):
+        mean_of_means = np.zeros(24)
+        mean_of_upper = np.zeros(24)
+        mean_of_lower = np.zeros(24)
+        mean_of_targets = np.zeros(24)
+
+        for i in range(24):
+            mean_of_means[i] = self.means.T[stop][i::24].mean()
+            mean_of_upper[i] = self.upper.T[stop][i::24].mean()
+            mean_of_lower[i] = self.lower.T[stop][i::24].mean()
+            mean_of_targets[i] = self.targets.T[stop][i::24].mean()
+        
+        plt.plot(mean_of_means, label='Mean of predictions')
+        plt.plot(mean_of_upper, label='Mean of predicted upper 95 % CI', linestyle='--')
+        plt.plot(mean_of_lower, label='Mean of predicted lower 95 % CI', linestyle='--')
+        plt.plot(mean_of_targets, label='Mean of true value')
+        plt.xlabel('Time')
+        plt.ylabel('Number of people on the bus')
+        plt.title(f'Mean of data for each time of day at stop ({stop})')
+        plt.legend()
+        plt.savefig(f'{self.plot_path}/STOPMEAN{stop}.png')
+        plt.close()
+
+
+    def plot_trend_given_time(self, hour):
+        mean_of_means = self.means[hour::24].mean(axis=0)
+        mean_of_upper = self.upper[hour::24].mean(axis=0)
+        mean_of_lower = self.lower[hour::24].mean(axis=0)
+        mean_of_targets = self.targets[hour::24].mean(axis=0)
+        
+        plt.plot(mean_of_means, label='Mean of predictions')
+        plt.plot(mean_of_upper, label='Mean of predicted upper 95 % CI', linestyle='--')
+        plt.plot(mean_of_lower, label='Mean of predicted lower 95 % CI', linestyle='--')
+        plt.plot(mean_of_targets, label='Mean of true value')
+        plt.xlabel('Stops')
+        plt.ylabel('Number of people on the bus')
+        plt.title(f'Mean of data for each stop at {hour}:00')
+        plt.legend()
+        plt.savefig(f'{self.plot_path}/HOURMEAN{hour}.png')
+        plt.close()
+    
     def print_performance_measures(self):
         print(f'MSE: {self.mse}')
         print(f'Accuracy: {self.acc*100} %')
@@ -111,10 +152,6 @@ class Results():
 
     def get_accuracy(self, targets, means, stds):#, given_stop=False, stop=0):
         lower, upper = self.get_upper_and_lower_confidence_interval(means, stds)
-        '''if given_stop:
-            lower = torch.from_numpy(lower.cpu().detach().numpy().T[stop])
-            upper = torch.from_numpy(upper.cpu().detach().numpy().T[stop])
-            targets = torch.from_numpy(targets.T[stop])'''
         total_elements = torch.numel(lower)
         elements_in_condfidence_interval = 0
         lower_flattened = torch.flatten(lower)

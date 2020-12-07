@@ -12,7 +12,7 @@ def main():
     train_new_model = False
     storage_name = '023'
     do_prediction = False
-    plot_results = True
+    plot_results = False
 
     use_temporal_features = True
     passenger_amount = True
@@ -95,7 +95,7 @@ def main():
         stOps.store_model(trained_model, train_losses, test_losses, input_dimension, hidden_dimension, linear_dimension, output_dimension)
     else:
         trained_model, train_losses, test_losses, input_dimension, hidden_dimension, linear_dimension, output_dimension = stOps.load_model()
-    
+        print(input_dimension, hidden_dimension, linear_dimension, output_dimension)
     predicting = Predict(
         name = storage_name,
         trained_model = trained_model, 
@@ -123,12 +123,17 @@ def main():
     
     if plot_results:
         res = Results(storage_name, passenger_amount)
-        #for i in range(test_set_length):
-        #    res.plot_predictions_all_stops(i)
+        for i in range(24):
+            res.plot_trend_given_time(i)
+        for i in range(10):
+            res.plot_trend_given_stop(i)
+        '''
+        for i in range(test_set_length):
+            res.plot_predictions_all_stops(i)
         for i in range(10):
             res.plot_predictions_given_stop(i)
             res.plot_predictions_given_stop_48h(i)
         res.plot_training()
-        res.print_performance_measures()
+        res.print_performance_measures()'''
 
 main()

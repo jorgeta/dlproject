@@ -38,14 +38,24 @@ class LSTM_Net(nn.Module):
 		self.lstm1=BayesianLSTM(
 			in_features=input_dim, 
 			out_features=hidden_dim, 
-			bias=True
+			bias=True,
+			prior_sigma_1 = 1.0,
+			prior_sigma_2 = 4.0,
+			prior_pi = 0.5,
+			posterior_mu_init = 0,
+			posterior_rho_init = -0.5
 		)
 
 		# bayesian linear layer
 		self.blinear1 = BayesianLinear(
 			in_features=hidden_dim, 
 			out_features=linear_dim,
-			bias=True
+			bias=True,
+			prior_sigma_1 = 1.0,
+			prior_sigma_2 = 0.5,
+			prior_pi = 0.5,
+			posterior_mu_init = 0,
+			posterior_rho_init = -0.5,
 		)
 
 		# linear layer

@@ -3,6 +3,7 @@ from torch import nn, optim
 from torch.autograd import Variable
 from data_handler import Dataset
 import numpy as np
+from torch.optim.lr_scheduler import StepLR
 
 def train_model(
     model, 
@@ -28,12 +29,14 @@ def train_model(
 
     # define criterion and optimiser
     criterion = nn.MSELoss()
-    optimiser = optim.Adam(model.parameters(), lr=1e-3)
+    optimiser = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1.0)
     #optimiser = optim.SGD(model.parameters(), lr=1e-3)
     
     # store losses per epoch
     train_losses = np.zeros(max_epochs)
     test_losses = np.zeros(max_epochs)
+
+    scheduler = StepLR(optimiser, step_size=15, verbose=True)
 
     for epoch in range(max_epochs):
         # Training
@@ -58,10 +61,11 @@ def train_model(
 
             optimiser.step()
 
-            output = model(local_batch.float())
+            output = model(local_batch)
+
             current_train_loss = criterion(output, local_labels.float())
             current_loss_sum += current_train_loss.item()
-
+            
             counter += 1
         train_losses[epoch] = current_loss_sum / counter
 
@@ -72,19 +76,17 @@ def train_model(
             for local_batch, local_labels in validation_generator:
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.to(device), local_labels.to(device)
-
-                # Model computations
                 
-                # Do validation error computation the same effective way as with the training error
-                # To compare different models with different preprocessing,
-                # compare the results after they have been reset to normal
-
+                # Model computations
                 output = model(local_batch.float())
+                
                 current_test_loss = criterion(output, local_labels.float())
                 current_loss_sum += current_test_loss.item()
 
                 counter += 1
             test_losses[epoch] = current_loss_sum / counter
+        
+        scheduler.step()
 
         # Output losses after each epoch
         print(f'Epoch {epoch+1} train loss: {train_losses[epoch]}, test loss: {test_losses[epoch]}')
