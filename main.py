@@ -9,16 +9,19 @@ from plot import Results
 from baseline import Baseline
 
 def main():
-    do_preprocessing = False
-    train_new_model = False
-    storage_name = '023'
-    do_prediction = False
-    plot_results = False
-    plot_baseline = True
+    storage_name = '104'
+
+    do_preprocessing = True
+    train_new_model = True
+    do_prediction = True
+    plot_results = True
+    plot_baseline = False
 
     use_temporal_features = True
     passenger_amount = True
+
     test_set_length = 24*28
+
     if do_preprocessing:
         sequence_length = 24*7
         path_to_data_folder = 'raw_data/'
@@ -53,7 +56,7 @@ def main():
         'shuffle': True,
         'num_workers': 0
     }
-    max_epochs = 10
+    max_epochs = 4
 
     test_params = {
         'batch_size': 2,
@@ -66,8 +69,8 @@ def main():
         input_dimension = 41 # number of features
     else:
         input_dimension = 10
-    hidden_dimension = 512 # dimension of hidden lstm layer
-    linear_dimension = 512 # dimension of output of first linear layer
+    hidden_dimension = 128 # dimension of hidden lstm layer
+    linear_dimension = 64 # dimension of output of first linear layer
     output_dimension = 10 # output dimension of network
     sequence_length = utils.hyper_params['sequence_length']
     difference_length = utils.hyper_params['difference_length']
@@ -81,7 +84,7 @@ def main():
         output_dim=output_dimension
     )
 
-    print(net)
+    #print(net)
 
     stOps = StorageOps(storage_name)
 
@@ -124,18 +127,21 @@ def main():
     
     if plot_results:
         res = Results(storage_name, passenger_amount)
-        for i in range(24):
+        res.plot_trend_given_time(7)
+        res.plot_trend_given_stop(0)
+        res.plot_predictions_all_stops(7)
+        res.plot_predictions_given_stop(0)
+        '''for i in range(24):
             res.plot_trend_given_time(i)
         for i in range(10):
             res.plot_trend_given_stop(i)
-        '''
         for i in range(test_set_length):
             res.plot_predictions_all_stops(i)
         for i in range(10):
             res.plot_predictions_given_stop(i)
             res.plot_predictions_given_stop_48h(i)
-        res.plot_training()
-        res.print_performance_measures()'''
+        res.plot_training()'''
+        res.print_performance_measures()
     
     if plot_baseline:
         baseline = Baseline(storage_name)
@@ -150,5 +156,3 @@ def main():
 
         print(baseline.mse)
         print(baseline.acc)
-
-main()

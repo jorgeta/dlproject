@@ -76,6 +76,8 @@ class Preprocessor():
         self.od_time = od_time
         self.od_stop = od_stop
 
+        print(od_time[-1])
+
         self.raw_data_is_fetched = True
 
     def create_person_density_array(self):

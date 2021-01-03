@@ -36,7 +36,7 @@ def train_model(
     train_losses = np.zeros(max_epochs)
     test_losses = np.zeros(max_epochs)
 
-    scheduler = StepLR(optimiser, step_size=15, verbose=True)
+    scheduler = StepLR(optimiser, step_size=15)
 
     for epoch in range(max_epochs):
         # Training
